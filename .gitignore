@@ -57,3 +57,11 @@ coverage/
 *.bak
 *.tmp
 
+
+# Exclude non-frontend folders from git repository
+.agents/
+Backend/
+doc/
+AGENTS.md
+ARCHITECTURE.md
+CHANGELOG.md
