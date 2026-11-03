@@ -35,7 +35,15 @@ const successMessage = ref('')
 
 const activeFrame = computed(() => {
   if (referenceFrames.value.length > 0) {
-    return referenceFrames.value[0]
+    const frame = referenceFrames.value[0]
+    if (frame.imageUrl.includes('pexels.com') || frame.imageUrl.includes('unsplash.com')) {
+      return {
+        ...frame,
+        imageUrl: resolveAssetUrl('/frames/tha-phae-gate-frame.png'),
+        opacity: 0.85,
+      }
+    }
+    return frame
   }
   if (shotPoint.value?.id === 'tha-phae-gate-main') {
     return {

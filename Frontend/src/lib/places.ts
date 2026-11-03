@@ -130,13 +130,17 @@ function mapShotPoint(row: Record<string, unknown>): ShotPoint {
 }
 
 function mapReferenceFrame(row: Record<string, unknown>): ReferenceFrame {
+  let imageUrl = (row.image_url as string) || ''
+  if (imageUrl.includes('pexels.com') || imageUrl.includes('unsplash.com') || !imageUrl) {
+    imageUrl = '/frames/tha-phae-gate-frame.png'
+  }
   return {
     id: row.id as string,
     shotPointId: row.shot_point_id as string,
     name: row.name as string,
-    imageUrl: resolveAssetUrl(row.image_url as string),
+    imageUrl: resolveAssetUrl(imageUrl),
     fit: row.fit as ReferenceFrame['fit'],
-    opacity: Number(row.opacity ?? 0.65),
+    opacity: Number(row.opacity ?? 0.85),
     isActive: row.is_active as boolean,
   }
 }
