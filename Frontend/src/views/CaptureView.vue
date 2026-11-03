@@ -297,7 +297,7 @@ onBeforeUnmount(() => {
       <img
         v-if="activeFrame && (previewUrl || cameraStatus === 'active')"
         class="capture-stage__overlay"
-        :src="resolveAssetUrl(activeFrame.imageUrl)"
+        :src="activeFrame.imageUrl"
         :alt="`${activeFrame.name} overlay`"
         :style="{ objectFit: activeFrame.fit, opacity: activeFrame.opacity }"
       />

@@ -8,6 +8,13 @@ export function resolveAssetUrl(url: string | null | undefined): string {
   }
   const base = import.meta.env.BASE_URL || '/'
   const normalizedBase = base.endsWith('/') ? base : `${base}/`
+  if (url.startsWith(normalizedBase)) {
+    return url
+  }
+  const baseWithoutSlash = normalizedBase.slice(0, -1)
+  if (baseWithoutSlash && url.startsWith(baseWithoutSlash)) {
+    return url
+  }
   const cleanPath = url.startsWith('/') ? url.slice(1) : url
   return `${normalizedBase}${cleanPath}`
 }
