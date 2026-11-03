@@ -40,6 +40,10 @@ jobs:
           npm run build
           cp dist/index.html dist/404.html
         working-directory: Frontend
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://kqwasmpgsltvuueyuqqz.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxd2FzbXBnc2x0dnV1ZXl1cXF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3MjcwOTMsImV4cCI6MjEwNTMwMzA5M30.TSWEafypmy7h6yr-SZkS5MoLk1k1PkLWrFG0bG4NpUg' }}
+          VITE_GAS_UPLOAD_URL: ${{ secrets.VITE_GAS_UPLOAD_URL || '' }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -52,4 +56,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
