@@ -127,12 +127,33 @@ function setPreview(file: InstanceType<typeof globalThis.File>) {
 function captureFromCamera() {
   if (!videoElement.value || cameraStatus.value !== 'active') return
   const video = videoElement.value
+  const vw = video.videoWidth || 1280
+  const vh = video.videoHeight || 720
+
+  // Crop to match what object-fit:cover shows in the 4:3 container
+  const containerAspect = 4 / 3
+  const videoAspect = vw / vh
+  let sx: number, sy: number, sw: number, sh: number
+  if (videoAspect > containerAspect) {
+    // Video is wider than container → crop sides
+    sh = vh
+    sw = Math.round(vh * containerAspect)
+    sx = Math.round((vw - sw) / 2)
+    sy = 0
+  } else {
+    // Video is taller than container → crop top/bottom (portrait case)
+    sw = vw
+    sh = Math.round(vw / containerAspect)
+    sx = 0
+    sy = Math.round((vh - sh) / 2)
+  }
+
   const canvas = globalThis.document.createElement('canvas')
-  canvas.width = video.videoWidth || 1280
-  canvas.height = video.videoHeight || 720
+  canvas.width = sw
+  canvas.height = sh
   const ctx = canvas.getContext('2d')
   if (!ctx) return
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh)
   canvas.toBlob(
     (blob) => {
       if (!blob) {

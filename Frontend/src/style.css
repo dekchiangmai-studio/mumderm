@@ -66,7 +66,7 @@ img {
 }
 .capture-stage img:not(.capture-stage__overlay) {
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   width: 100%;
 }
 .capture-stage__video {
