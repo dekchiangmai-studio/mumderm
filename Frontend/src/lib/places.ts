@@ -1,6 +1,17 @@
 import { supabase } from './supabase'
 import type { Place, ReferenceFrame, ShotPoint } from '../types/place'
 
+export function resolveAssetUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  if (/^(?:https?:|\/\/|data:|blob:)/i.test(url)) {
+    return url
+  }
+  const base = import.meta.env.BASE_URL || '/'
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`
+  const cleanPath = url.startsWith('/') ? url.slice(1) : url
+  return `${normalizedBase}${cleanPath}`
+}
+
 export class DataAccessError extends Error {
   constructor(message: string) {
     super(message)
@@ -123,9 +134,9 @@ function mapReferenceFrame(row: Record<string, unknown>): ReferenceFrame {
     id: row.id as string,
     shotPointId: row.shot_point_id as string,
     name: row.name as string,
-    imageUrl: row.image_url as string,
+    imageUrl: resolveAssetUrl(row.image_url as string),
     fit: row.fit as ReferenceFrame['fit'],
-    opacity: row.opacity as number,
+    opacity: Number(row.opacity ?? 0.65),
     isActive: row.is_active as boolean,
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuth } from '../lib/auth'
 import { uploadImage } from '../lib/image-storage'
@@ -7,6 +7,7 @@ import {
   getPlaceById,
   getReferenceFramesByShotPointId,
   getShotPointById,
+  resolveAssetUrl,
 } from '../lib/places'
 import { createSubmission } from '../lib/submissions'
 import type { Place, ReferenceFrame, ShotPoint } from '../types/place'
@@ -32,7 +33,23 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-const activeFrame = computed(() => referenceFrames.value[0] ?? null)
+const activeFrame = computed(() => {
+  if (referenceFrames.value.length > 0) {
+    return referenceFrames.value[0]
+  }
+  if (shotPoint.value?.id === 'tha-phae-gate-main') {
+    return {
+      id: 'tha-phae-gate-main-reference',
+      shotPointId: 'tha-phae-gate-main',
+      name: 'กรอบอ้างอิงหลัก',
+      imageUrl: resolveAssetUrl('/frames/tha-phae-gate-frame.png'),
+      fit: 'cover' as const,
+      opacity: 0.85,
+      isActive: true,
+    }
+  }
+  return null
+})
 
 const cameraMessage = computed(() => {
   if (cameraStatus.value === 'denied') {
@@ -45,6 +62,9 @@ const cameraMessage = computed(() => {
 })
 
 function stopCamera() {
+  if (videoElement.value) {
+    videoElement.value.srcObject = null
+  }
   cameraStream.value?.getTracks().forEach((track) => track.stop())
   cameraStream.value = null
 }
@@ -59,12 +79,25 @@ async function requestCamera() {
   cameraStatus.value = 'requesting'
   try {
     stopCamera()
-    cameraStream.value = await globalThis.navigator.mediaDevices.getUserMedia({
+    const stream = await globalThis.navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: { ideal: 'environment' } },
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1440 },
+      },
     })
+    cameraStream.value = stream
     cameraStatus.value = 'active'
-    if (videoElement.value) videoElement.value.srcObject = cameraStream.value
+    await nextTick()
+    if (videoElement.value) {
+      videoElement.value.srcObject = stream
+      try {
+        await videoElement.value.play()
+      } catch {
+        // Handled by muted playsinline attributes
+      }
+    }
   } catch (error) {
     cameraStatus.value = 'denied'
     errorMessage.value =
@@ -85,10 +118,13 @@ function setPreview(file: InstanceType<typeof globalThis.File>) {
 
 function captureFromCamera() {
   if (!videoElement.value || cameraStatus.value !== 'active') return
+  const video = videoElement.value
   const canvas = globalThis.document.createElement('canvas')
-  canvas.width = videoElement.value.videoWidth
-  canvas.height = videoElement.value.videoHeight
-  canvas.getContext('2d')?.drawImage(videoElement.value, 0, 0)
+  canvas.width = video.videoWidth || 1280
+  canvas.height = video.videoHeight || 720
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
   canvas.toBlob(
     (blob) => {
       if (!blob) {
@@ -237,22 +273,23 @@ onBeforeUnmount(() => {
       }"
     >
       <video
-        v-if="!previewUrl && cameraStatus === 'active'"
+        v-show="!previewUrl && cameraStatus === 'active'"
         ref="videoElement"
         class="capture-stage__video"
         autoplay
         muted
         playsinline
+        webkit-playsinline
       ></video>
       <img v-if="previewUrl" :src="previewUrl" alt="ภาพตัวอย่างที่เลือก" />
       <div v-else-if="cameraStatus !== 'active'" class="capture-stage__empty">
         <span class="empty-state__mark">◎</span>
-        <p>เลือกภาพจากกล้องหรือคลังภาพเพื่อเริ่ม</p>
+        <p>กด "เปิดกล้องเล็งถ่ายภาพ" ด้านล่าง เพื่อดูภาพซ้อนและถ่ายภาพ</p>
       </div>
       <img
-        v-if="(previewUrl || cameraStatus === 'active') && activeFrame"
+        v-if="activeFrame && (previewUrl || cameraStatus === 'active')"
         class="capture-stage__overlay"
-        :src="activeFrame.imageUrl"
+        :src="resolveAssetUrl(activeFrame.imageUrl)"
         :alt="`${activeFrame.name} overlay`"
         :style="{ objectFit: activeFrame.fit, opacity: activeFrame.opacity }"
       />
@@ -275,7 +312,7 @@ onBeforeUnmount(() => {
         {{
           cameraStatus === 'requesting'
             ? 'กำลังขอใช้กล้อง...'
-            : 'อนุญาตใช้กล้อง'
+            : 'เปิดกล้องเล็งถ่ายภาพ'
         }}
       </button>
       <button
@@ -287,13 +324,12 @@ onBeforeUnmount(() => {
         <span aria-hidden="true">●</span>
         ถ่ายภาพ
       </button>
-      <label class="primary-button capture-actions__file">
+      <label v-if="!previewUrl" class="quiet-button capture-actions__file">
         <span aria-hidden="true">◎</span>
-        ถ่ายภาพ / เลือกรูป
+        เลือกรูปจากคลังภาพ
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          capture="environment"
           @change="onFileChange"
         />
       </label>
@@ -304,7 +340,7 @@ onBeforeUnmount(() => {
         :disabled="isSubmitting"
         @click="clearPreview"
       >
-        เลือกใหม่
+        ถ่าย / เลือกใหม่
       </button>
       <button
         v-if="previewUrl"

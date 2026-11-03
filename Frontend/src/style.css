@@ -72,7 +72,7 @@ img {
 .capture-stage__video {
   height: 100%;
   object-fit: cover;
-  transform: scaleX(-1);
+  /* transform: none; */
   width: 100%;
 }
 .capture-stage--empty {
@@ -91,7 +91,7 @@ img {
 .capture-stage__overlay {
   inset: 0;
   height: 100%;
-  mix-blend-mode: multiply;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.8));
   pointer-events: none;
   position: absolute;
   width: 100%;
